@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fishing Reaction Test</title>
+
+  <style>
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family:Inter,system-ui,sans-serif;
+    }
+
+    body{
+      min-height:100vh;
+      background:
+        radial-gradient(circle at top left,#1f2937 0%,#0f172a 40%,#020617 100%);
+      color:white;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      padding:30px;
+    }
+
+    .container{
+      width:100%;
+      max-width:1100px;
+      display:grid;
+      grid-template-columns:1fr 340px;
+      gap:25px;
+    }
+
+    .card{
+      background:rgba(255,255,255,0.05);
+      border:1px solid rgba(255,255,255,0.08);
+      backdrop-filter:blur(12px);
+      border-radius:24px;
+      box-shadow:0 20px 50px rgba(0,0,0,0.45);
+    }
+
+    .left{
+      padding:25px;
+    }
+
+    .title{
+      font-size:34px;
+      font-weight:800;
+      margin-bottom:8px;
+      letter-spacing:-1px;
+    }
+
+    .subtitle{
+      color:#94a3b8;
+      margin-bottom:25px;
+      line-height:1.5;
+    }
+
+    .controls{
+      display:flex;
+      gap:14px;
+      margin-bottom:20px;
+      flex-wrap:wrap;
+    }
+
+    button{
+      border:none;
+      border-radius:14px;
+      padding:14px 22px;
+      font-size:15px;
+      font-weight:700;
+      cursor:pointer;
+      transition:0.2s ease;
+    }
+
+    .start{
+      background:linear-gradient(135deg,#3b82f6,#2563eb);
+      color:white;
+    }
+
+    .start:hover{
+      transform:translateY(-2px);
+      box-shadow:0 10px 30px rgba(59,130,246,0.35);
+    }
+
+    .pingBtn{
+      background:#111827;
+      color:white;
+      border:1px solid rgba(255,255,255,0.1);
+    }
+
+    .arena{
+      width:100%;
+      height:420px;
+      border-radius:24px;
+      background:#020617;
+      border:2px solid rgba(255,255,255,0.06);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
+      overflow:hidden;
+      user-select:none;
+      cursor:pointer;
+      transition:0.2s ease;
+    }
+
+    .arena.ready{
+      background:#052e16;
+      box-shadow:0 0 50px rgba(34,197,94,0.25);
+    }
+
+    .arena.waiting{
+      background:#111827;
+    }
+
+    .arena.flash{
+      animation:flashAnim 0.35s ease;
+    }
+
+    @keyframes flashAnim{
+      0%{filter:brightness(1);}
+      50%{filter:brightness(2);}
+      100%{filter:brightness(1);}
+    }
+
+    .centerText{
+      text-align:center;
+      pointer-events:none;
+    }
+
+    .big{
+      font-size:52px;
+      font-weight:900;
+      letter-spacing:-2px;
+    }
+
+    .small{
+      color:#94a3b8;
+      margin-top:10px;
+      font-size:15px;
+    }
+
+    .sidebar{
+      padding:22px;
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+
+    .stat{
+      background:rgba(255,255,255,0.04);
+      border-radius:18px;
+      padding:18px;
+    }
+
+    .stat h3{
+      color:#94a3b8;
+      font-size:14px;
+      margin-bottom:8px;
+      font-weight:600;
+    }
+
+    .value{
+      font-size:28px;
+      font-weight:800;
+    }
+
+    .results{
+      max-height:420px;
+      overflow:auto;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top:8px;
+    }
+
+    .result{
+      background:rgba(255,255,255,0.04);
+      border-radius:14px;
+      padding:12px 14px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    }
+
+    .good{
+      color:#22c55e;
+      font-weight:700;
+    }
+
+    .sus{
+      color:#f59e0b;
+      font-weight:700;
+    }
+
+    .insane{
+      color:#ef4444;
+      font-weight:700;
+    }
+
+    .progressBar{
+      width:100%;
+      height:12px;
+      border-radius:999px;
+      background:rgba(255,255,255,0.08);
+      overflow:hidden;
+      margin-top:14px;
+    }
+
+    .progress{
+      height:100%;
+      width:0%;
+      background:linear-gradient(90deg,#3b82f6,#22c55e);
+      transition:0.25s;
+    }
+
+    .footer{
+      margin-top:15px;
+      color:#64748b;
+      line-height:1.5;
+      font-size:13px;
+    }
+
+    .pingInput{
+      width:110px;
+      background:#0f172a;
+      border:1px solid rgba(255,255,255,0.1);
+      color:white;
+      border-radius:12px;
+      padding:12px;
+      outline:none;
+    }
+
+    @media(max-width:900px){
+      .container{
+        grid-template-columns:1fr;
+      }
+
+      .arena{
+        height:340px;
+      }
+
+      .big{
+        font-size:38px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div class="card left">
+
+    <div class="title">Reaktionszeiten-Test</div>
+
+    <div class="subtitle">
+      Sobald der „Anbiss“ erscheint + Ton abgespielt wird,
+      musst du so schnell wie möglich auf das Feld klicken.
+      <br><br>
+      Insgesamt: <b>15 zufällige Versuche</b>
+      <br>
+      Nach <b>3 Fehlstarts</b> wird der komplette Test zurückgesetzt.
+    </div>
+
+    <div class="controls">
+      <button class="start" onclick="startTest()">Test starten</button>
+
+      <input
+        type="number"
+        id="pingInput"
+        class="pingInput"
+        placeholder="Ping ms"
+        value="40"
+      />
+
+      <button class="pingBtn" onclick="clearResults()">Reset</button>
+    </div>
+
+    <div id="arena" class="arena waiting" onclick="handleClick()">
+
+      <div class="centerText">
+        <div id="mainText" class="big">Bereit?</div>
+        <div id="subText" class="small">
+          Drücke auf „Test starten“
+        </div>
+      </div>
+
+    </div>
+
+    <div class="progressBar">
+      <div id="progress" class="progress"></div>
+    </div>
+
+    <div class="footer">
+      Hinweis:
+      <br>
+      Die gemessene Reaktionszeit wird zusätzlich um den angegebenen Ping korrigiert.
+      <br>
+      Beispiel:
+      140ms Reaktion bei 40ms Ping = 100ms korrigierte Reaktion.
+    </div>
+
+  </div>
+
+  <div class="card sidebar">
+
+    <div class="stat">
+      <h3>Versuch</h3>
+      <div id="attemptValue" class="value">0 / 15</div>
+    </div>
+
+    <div class="stat">
+      <h3>Durchschnitt</h3>
+      <div id="avgValue" class="value">0 ms</div>
+    </div>
+
+    <div class="stat">
+      <h3>Beste Zeit</h3>
+      <div id="bestValue" class="value">0 ms</div>
+    </div>
+
+    <div class="stat">
+      <h3>Fehlstarts</h3>
+      <div id="falseValue" class="value">0 / 3</div>
+    </div>
+
+    <div class="stat">
+      <h3>Reaktionszeiten</h3>
+
+      <div id="results" class="results"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+
+  const arena = document.getElementById("arena");
+  const mainText = document.getElementById("mainText");
+  const subText = document.getElementById("subText");
+
+  const resultsDiv = document.getElementById("results");
+
+  const avgValue = document.getElementById("avgValue");
+  const bestValue = document.getElementById("bestValue");
+  const attemptValue = document.getElementById("attemptValue");
+  const falseValue = document.getElementById("falseValue");
+
+  const progress = document.getElementById("progress");
+
+  let waiting = false;
+  let canClick = false;
+  let startTime = 0;
+
+  let currentAttempt = 0;
+  let totalAttempts = 15;
+
+  let results = [];
+
+  let falseStarts = 0;
+
+  function playBeep(){
+
+    const ctx = new(window.AudioContext || window.webkitAudioContext)();
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = "sine";
+    osc.frequency.value = 900;
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    gain.gain.setValueAtTime(0.2,ctx.currentTime);
+
+    osc.start();
+
+    osc.stop(ctx.currentTime + 0.12);
+  }
+
+  function randomDelay(){
+    return Math.floor(Math.random() * 4000) + 1500;
+  }
+
+  function startTest(){
+
+    results = [];
+    currentAttempt = 0;
+    falseStarts = 0;
+
+    resultsDiv.innerHTML = "";
+
+    progress.style.width = "0%";
+
+    updateStats();
+
+    nextRound();
+  }
+
+  function nextRound(){
+
+    if(currentAttempt >= totalAttempts){
+
+      finishTest();
+      return;
+    }
+
+    canClick = false;
+    waiting = true;
+
+    arena.className = "arena waiting";
+
+    mainText.innerText = "Warte...";
+    subText.innerText = "Der Fisch kann jederzeit anbeißen";
+
+    const delay = randomDelay();
+
+    setTimeout(() => {
+
+      arena.className = "arena ready flash";
+
+      mainText.innerText = "JETZT!";
+      subText.innerText = "KLICKE SOFORT";
+
+      playBeep();
+
+      startTime = performance.now();
+
+      canClick = true;
+      waiting = false;
+
+    }, delay);
+  }
+
+  function handleClick(){
+
+    if(waiting){
+
+      falseStarts++;
+
+      updateStats();
+
+      arena.className = "arena flash";
+
+      mainText.innerText = "ZU FRÜH!";
+      subText.innerText =
+        `Fehlstarts: ${falseStarts} / 3`;
+
+      if(falseStarts >= 3){
+
+        canClick = false;
+        waiting = false;
+
+        setTimeout(() => {
+
+          alert(
+`Du hast 3x zu früh gedrückt.
+
+Der komplette Test wird zurückgesetzt.`
+          );
+
+          clearResults();
+
+        }, 400);
+
+        return;
+      }
+
+      return;
+    }
+
+    if(!canClick){
+      return;
+    }
+
+    const reaction = Math.round(performance.now() - startTime);
+
+    const ping =
+      parseInt(document.getElementById("pingInput").value) || 0;
+
+    const corrected =
+      Math.max(0, reaction - ping);
+
+    results.push(corrected);
+
+    currentAttempt++;
+
+    addResult(currentAttempt, corrected);
+
+    updateStats();
+
+    progress.style.width =
+      ((currentAttempt / totalAttempts) * 100) + "%";
+
+    canClick = false;
+
+    arena.className = "arena waiting";
+
+    mainText.innerText = corrected + " ms";
+    subText.innerText = "Reaktion gespeichert";
+
+    setTimeout(() => {
+      nextRound();
+    }, 1200);
+  }
+
+  function addResult(index, ms){
+
+    const div = document.createElement("div");
+
+    div.className = "result";
+
+    let cls = "good";
+
+    if(ms < 100){
+      cls = "insane";
+    } else if(ms < 150){
+      cls = "sus";
+    }
+
+    div.innerHTML = `
+      <span>Versuch ${index}</span>
+      <span class="${cls}">${ms} ms</span>
+    `;
+
+    resultsDiv.prepend(div);
+  }
+
+  function updateStats(){
+
+    attemptValue.innerText =
+      `${currentAttempt} / ${totalAttempts}`;
+
+    falseValue.innerText =
+      `${falseStarts} / 3`;
+
+    if(results.length === 0){
+
+      avgValue.innerText = "0 ms";
+      bestValue.innerText = "0 ms";
+
+      return;
+    }
+
+    const avg =
+      Math.round(
+        results.reduce((a,b)=>a+b,0) / results.length
+      );
+
+    const best = Math.min(...results);
+
+    avgValue.innerText = avg + " ms";
+    bestValue.innerText = best + " ms";
+  }
+
+  function finishTest(){
+
+    arena.className = "arena ready";
+
+    mainText.innerText = "Fertig!";
+    subText.innerText =
+      "Alle 15 Reaktionen wurden gespeichert";
+
+    const under100 =
+      results.filter(x => x < 100).length;
+
+    const avg =
+      Math.round(
+        results.reduce((a,b)=>a+b,0) / results.length
+      );
+
+    const best =
+      Math.min(...results);
+
+    setTimeout(() => {
+
+      alert(
+`Test beendet!
+
+Durchschnitt:
+${avg} ms
+
+Beste Zeit:
+${best} ms
+
+Unter 100ms:
+${under100}x
+
+Fehlstarts:
+${falseStarts}/3`
+      );
+
+    }, 300);
+  }
+
+  function clearResults(){
+
+    results = [];
+    currentAttempt = 0;
+    falseStarts = 0;
+
+    resultsDiv.innerHTML = "";
+
+    progress.style.width = "0%";
+
+    updateStats();
+
+    canClick = false;
+    waiting = false;
+
+    arena.className = "arena waiting";
+
+    mainText.innerText = "Bereit?";
+    subText.innerText = "Drücke auf „Test starten“";
+  }
+
+</script>
+
+</body>
+</html>
