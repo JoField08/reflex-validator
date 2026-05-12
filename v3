@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>Minecraft Fishing Reaction Check</title>
+
+<style>
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Inter,system-ui,sans-serif;
+}
+
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(circle at top left,#1f2937 0%,#0f172a 40%,#020617 100%);
+  color:white;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding:30px;
+}
+
+.container{
+  width:100%;
+  max-width:1150px;
+  display:grid;
+  grid-template-columns:1fr 340px;
+  gap:25px;
+}
+
+.card{
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.08);
+  backdrop-filter:blur(12px);
+  border-radius:24px;
+  box-shadow:0 20px 50px rgba(0,0,0,0.45);
+}
+
+.left{
+  padding:25px;
+}
+
+.title{
+  font-size:34px;
+  font-weight:900;
+  margin-bottom:10px;
+  letter-spacing:-1px;
+}
+
+.subtitle{
+  color:#94a3b8;
+  line-height:1.5;
+  margin-bottom:25px;
+}
+
+.controls{
+  display:flex;
+  gap:14px;
+  flex-wrap:wrap;
+  margin-bottom:20px;
+}
+
+button{
+  border:none;
+  border-radius:14px;
+  padding:14px 22px;
+  font-size:15px;
+  font-weight:800;
+  cursor:pointer;
+  transition:0.2s ease;
+}
+
+.start{
+  background:linear-gradient(135deg,#3b82f6,#2563eb);
+  color:white;
+}
+
+.start:hover{
+  transform:translateY(-2px);
+}
+
+.pingBtn{
+  background:#111827;
+  color:white;
+  border:1px solid rgba(255,255,255,0.1);
+}
+
+.pingInput{
+  width:110px;
+  background:#0f172a;
+  border:1px solid rgba(255,255,255,0.1);
+  color:white;
+  border-radius:12px;
+  padding:12px;
+  outline:none;
+}
+
+.arena{
+  width:100%;
+  height:450px;
+  border-radius:24px;
+  overflow:hidden;
+  position:relative;
+  cursor:pointer;
+
+  background:
+    linear-gradient(to bottom,
+      #0ea5e9 0%,
+      #0284c7 45%,
+      #0369a1 100%);
+
+  border:2px solid rgba(255,255,255,0.08);
+
+  transition:0.15s;
+}
+
+.arena.ready{
+  filter:brightness(1.15);
+}
+
+.arena.flash{
+  animation:flashAnim 0.18s ease;
+}
+
+@keyframes flashAnim{
+  0%{filter:brightness(1);}
+  50%{filter:brightness(1.7);}
+  100%{filter:brightness(1);}
+}
+
+/* WATER */
+
+.waterNoise{
+  position:absolute;
+  inset:0;
+  opacity:0.08;
+  background-image:
+    radial-gradient(circle at 20% 30%,white 1px,transparent 1px),
+    radial-gradient(circle at 70% 60%,white 1px,transparent 1px),
+    radial-gradient(circle at 40% 80%,white 1px,transparent 1px);
+  background-size:120px 120px;
+}
+
+/* BOBBER */
+
+.bobber{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:16px;
+  height:16px;
+  border-radius:50%;
+  background:#ef4444;
+  transform:translate(-50%,-50%);
+  z-index:5;
+
+  box-shadow:
+    0 0 0 4px rgba(255,255,255,0.08),
+    0 0 18px rgba(239,68,68,0.8);
+}
+
+.bobber::after{
+  content:"";
+  position:absolute;
+  width:40px;
+  height:40px;
+  border-radius:50%;
+  border:2px solid rgba(255,255,255,0.12);
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+}
+
+/* FISH */
+
+.fishTrail{
+  position:absolute;
+  left:-320px;
+  top:50%;
+  transform:translateY(-50%);
+  display:flex;
+  align-items:center;
+  gap:12px;
+  z-index:2;
+}
+
+.fish{
+  font-size:42px;
+  transform:scaleX(-1);
+  filter:drop-shadow(0 0 10px rgba(255,255,255,0.25));
+}
+
+.bubbles{
+  color:white;
+  font-size:20px;
+  opacity:0.7;
+  letter-spacing:6px;
+}
+
+.hidden{
+  display:none;
+}
+
+/* SPLASH */
+
+.splash{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  width:90px;
+  height:90px;
+  border-radius:50%;
+  border:4px solid rgba(255,255,255,0.8);
+  opacity:0;
+  pointer-events:none;
+  z-index:4;
+}
+
+.splash.active{
+  animation:splashAnim 0.45s ease;
+}
+
+@keyframes splashAnim{
+
+  0%{
+    width:20px;
+    height:20px;
+    opacity:1;
+  }
+
+  100%{
+    width:120px;
+    height:120px;
+    opacity:0;
+  }
+}
+
+.centerText{
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  pointer-events:none;
+  z-index:6;
+}
+
+.big{
+  font-size:56px;
+  font-weight:900;
+  letter-spacing:-2px;
+  text-shadow:0 4px 20px rgba(0,0,0,0.4);
+}
+
+.small{
+  margin-top:12px;
+  color:#dbeafe;
+}
+
+/* SIDEBAR */
+
+.sidebar{
+  padding:22px;
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
+
+.stat{
+  background:rgba(255,255,255,0.04);
+  border-radius:18px;
+  padding:18px;
+}
+
+.stat h3{
+  color:#94a3b8;
+  font-size:14px;
+  margin-bottom:8px;
+}
+
+.value{
+  font-size:28px;
+  font-weight:900;
+}
+
+.results{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  max-height:420px;
+  overflow:auto;
+}
+
+.result{
+  background:rgba(255,255,255,0.04);
+  border-radius:14px;
+  padding:12px 14px;
+  display:flex;
+  justify-content:space-between;
+}
+
+.good{
+  color:#22c55e;
+  font-weight:800;
+}
+
+.sus{
+  color:#f59e0b;
+  font-weight:800;
+}
+
+.insane{
+  color:#ef4444;
+  font-weight:800;
+}
+
+.progressBar{
+  width:100%;
+  height:12px;
+  border-radius:999px;
+  background:rgba(255,255,255,0.08);
+  overflow:hidden;
+  margin-top:18px;
+}
+
+.progress{
+  width:0%;
+  height:100%;
+  background:
+    linear-gradient(90deg,#3b82f6,#22c55e);
+  transition:0.25s;
+}
+
+.footer{
+  margin-top:16px;
+  color:#64748b;
+  line-height:1.5;
+  font-size:13px;
+}
+
+@media(max-width:900px){
+
+  .container{
+    grid-template-columns:1fr;
+  }
+
+  .arena{
+    height:360px;
+  }
+
+  .big{
+    font-size:38px;
+  }
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div class="card left">
+
+    <div class="title">
+      Minecraft Fishing Check
+    </div>
+
+    <div class="subtitle">
+      Viel realistischerer Minecraft-Angeltest.
+      <br><br>
+
+      Der Fisch schwimmt sichtbar zum Bobber.
+      Kurz vor dem Biss gibt es Fake-Movements,
+      Mini-Splashes und unregelmäßige Bewegungen.
+      <br><br>
+
+      Dadurch kann man nicht mehr einfach auf den Sound reagieren.
+    </div>
+
+    <div class="controls">
+
+      <button class="start" onclick="startTest()">
+        Test starten
+      </button>
+
+      <input
+        type="number"
+        id="pingInput"
+        class="pingInput"
+        value="40"
+        placeholder="Ping"
+      />
+
+      <button class="pingBtn" onclick="clearResults()">
+        Reset
+      </button>
+
+    </div>
+
+    <div
+      id="arena"
+      class="arena"
+      onclick="handleClick()"
+    >
+
+      <div class="waterNoise"></div>
+
+      <div id="fishTrail" class="fishTrail hidden">
+        <div class="fish">🐟</div>
+        <div class="bubbles">🫧 🫧 🫧</div>
+      </div>
+
+      <div id="bobber" class="bobber"></div>
+
+      <div id="splash" class="splash"></div>
+
+      <div class="centerText">
+
+        <div id="mainText" class="big">
+          Bereit?
+        </div>
+
+        <div id="subText" class="small">
+          Drücke auf „Test starten“
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="progressBar">
+      <div id="progress" class="progress"></div>
+    </div>
+
+    <div class="footer">
+
+      Der Test ist absichtlich schwerer gemacht:
+      <br><br>
+
+      • Fake-Bewegungen
+      <br>
+      • Unregelmäßiger Fisch
+      <br>
+      • Kein riesiges „JETZT!“ mehr
+      <br>
+      • Spätere Audio-Reaktion
+      <br>
+      • Realistischere Minecraft-Simulation
+
+    </div>
+
+  </div>
+
+  <div class="card sidebar">
+
+    <div class="stat">
+      <h3>Versuch</h3>
+      <div id="attemptValue" class="value">
+        0 / 15
+      </div>
+    </div>
+
+    <div class="stat">
+      <h3>Durchschnitt</h3>
+      <div id="avgValue" class="value">
+        0 ms
+      </div>
+    </div>
+
+    <div class="stat">
+      <h3>Beste Zeit</h3>
+      <div id="bestValue" class="value">
+        0 ms
+      </div>
+    </div>
+
+    <div class="stat">
+      <h3>Fehlstarts</h3>
+      <div id="falseValue" class="value">
+        0 / 3
+      </div>
+    </div>
+
+    <div class="stat">
+
+      <h3>Reaktionszeiten</h3>
+
+      <div id="results" class="results"></div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+
+const arena = document.getElementById("arena");
+
+const mainText = document.getElementById("mainText");
+const subText = document.getElementById("subText");
+
+const fishTrail = document.getElementById("fishTrail");
+const splash = document.getElementById("splash");
+
+const resultsDiv = document.getElementById("results");
+
+const avgValue = document.getElementById("avgValue");
+const bestValue = document.getElementById("bestValue");
+const falseValue = document.getElementById("falseValue");
+const attemptValue = document.getElementById("attemptValue");
+
+const progress = document.getElementById("progress");
+
+let waiting = false;
+let canClick = false;
+
+let currentAttempt = 0;
+let totalAttempts = 15;
+
+let results = [];
+let falseStarts = 0;
+
+let startTime = 0;
+
+function playBeep(){
+
+  const ctx =
+    new(window.AudioContext || window.webkitAudioContext)();
+
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  osc.type = "triangle";
+  osc.frequency.value = 650;
+
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+
+  gain.gain.setValueAtTime(0.08,ctx.currentTime);
+
+  osc.start();
+
+  osc.stop(ctx.currentTime + 0.06);
+}
+
+function splashEffect(){
+
+  splash.classList.remove("active");
+
+  void splash.offsetWidth;
+
+  splash.classList.add("active");
+}
+
+function randomDelay(){
+  return Math.floor(Math.random() * 3500) + 1800;
+}
+
+function animateFish(delay){
+
+  fishTrail.classList.remove("hidden");
+
+  fishTrail.style.transition = "none";
+
+  fishTrail.style.left = "-320px";
+
+  void fishTrail.offsetWidth;
+
+  fishTrail.style.transition =
+    `left ${delay}ms cubic-bezier(.2,.7,.2,1)`;
+
+  fishTrail.style.left = "calc(50% - 250px)";
+}
+
+function fakeMovement(){
+
+  splashEffect();
+
+  const offset =
+    Math.random() * 16 - 8;
+
+  fishTrail.style.top =
+    `calc(50% + ${offset}px)`;
+}
+
+function startTest(){
+
+  results = [];
+  falseStarts = 0;
+  currentAttempt = 0;
+
+  resultsDiv.innerHTML = "";
+
+  progress.style.width = "0%";
+
+  updateStats();
+
+  nextRound();
+}
+
+function nextRound(){
+
+  if(currentAttempt >= totalAttempts){
+
+    finishTest();
+    return;
+  }
+
+  canClick = false;
+  waiting = true;
+
+  arena.className = "arena";
+
+  mainText.innerText = "";
+  subText.innerText = "";
+
+  const delay = randomDelay();
+
+  animateFish(delay);
+
+  /* RANDOM FAKE SPLASHES */
+
+  const fakeCount =
+    Math.floor(Math.random() * 3);
+
+  for(let i=0;i<fakeCount;i++){
+
+    const fakeTime =
+      Math.random() * (delay - 600);
+
+    setTimeout(() => {
+
+      if(waiting){
+
+        fakeMovement();
+
+      }
+
+    }, fakeTime);
+  }
+
+  /* REAL BITE */
+
+  setTimeout(() => {
+
+    fishTrail.classList.add("hidden");
+
+    splashEffect();
+
+    playBeep();
+
+    arena.classList.add("ready");
+
+    startTime = performance.now();
+
+    canClick = true;
+    waiting = false;
+
+  }, delay);
+}
+
+function handleClick(){
+
+  if(waiting){
+
+    falseStarts++;
+
+    updateStats();
+
+    mainText.innerText = "ZU FRÜH";
+
+    if(falseStarts >= 3){
+
+      setTimeout(() => {
+
+        alert(
+`3 Fehlstarts.
+
+Test wurde zurückgesetzt.`
+        );
+
+        clearResults();
+
+      },300);
+    }
+
+    return;
+  }
+
+  if(!canClick){
+    return;
+  }
+
+  canClick = false;
+
+  const raw =
+    Math.round(performance.now() - startTime);
+
+  const ping =
+    parseInt(document.getElementById("pingInput").value) || 0;
+
+  /*
+    Extra realism delay:
+    Minecraft + human recognition
+  */
+
+  const realismPenalty =
+    Math.floor(Math.random() * 35) + 20;
+
+  const corrected =
+    Math.max(0, raw - ping + realismPenalty);
+
+  results.push(corrected);
+
+  currentAttempt++;
+
+  addResult(currentAttempt, corrected);
+
+  updateStats();
+
+  progress.style.width =
+    ((currentAttempt / totalAttempts) * 100) + "%";
+
+  mainText.innerText =
+    corrected + " ms";
+
+  setTimeout(() => {
+
+    nextRound();
+
+  }, 1000);
+}
+
+function addResult(index, ms){
+
+  const div = document.createElement("div");
+
+  div.className = "result";
+
+  let cls = "good";
+
+  if(ms < 115){
+
+    cls = "insane";
+
+  }else if(ms < 160){
+
+    cls = "sus";
+  }
+
+  div.innerHTML = `
+    <span>Versuch ${index}</span>
+    <span class="${cls}">${ms} ms</span>
+  `;
+
+  resultsDiv.prepend(div);
+}
+
+function updateStats(){
+
+  attemptValue.innerText =
+    `${currentAttempt} / ${totalAttempts}`;
+
+  falseValue.innerText =
+    `${falseStarts} / 3`;
+
+  if(results.length === 0){
+
+    avgValue.innerText = "0 ms";
+    bestValue.innerText = "0 ms";
+
+    return;
+  }
+
+  const avg =
+    Math.round(
+      results.reduce((a,b)=>a+b,0) / results.length
+    );
+
+  const best =
+    Math.min(...results);
+
+  avgValue.innerText =
+    avg + " ms";
+
+  bestValue.innerText =
+    best + " ms";
+}
+
+function finishTest(){
+
+  const avg =
+    Math.round(
+      results.reduce((a,b)=>a+b,0) / results.length
+    );
+
+  const best =
+    Math.min(...results);
+
+  const under100 =
+    results.filter(x => x < 100).length;
+
+  mainText.innerText = "Fertig";
+
+  setTimeout(() => {
+
+    alert(
+`Test beendet!
+
+Durchschnitt:
+${avg} ms
+
+Beste Zeit:
+${best} ms
+
+Unter 100ms:
+${under100}
+
+Fehlstarts:
+${falseStarts}/3`
+    );
+
+  },300);
+}
+
+function clearResults(){
+
+  results = [];
+  currentAttempt = 0;
+  falseStarts = 0;
+
+  canClick = false;
+  waiting = false;
+
+  fishTrail.classList.add("hidden");
+
+  resultsDiv.innerHTML = "";
+
+  progress.style.width = "0%";
+
+  updateStats();
+
+  mainText.innerText = "Bereit?";
+  subText.innerText =
+    "Drücke auf Test starten";
+}
+
+</script>
+
+</body>
+</html>
